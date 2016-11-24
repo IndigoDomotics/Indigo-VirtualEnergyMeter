@@ -3,7 +3,7 @@
 	<!-- You can add a SupportURL element inside here if you want a context
 		 sensitive help link on the config UI - otherwise it will just link
 		 to the URL specified in the AboutInformation element. -->
-	<SupportURL>https://github.com/lindehoff/Indigo-PliginName</SupportURL>
+	<SupportURL>https://github.com/lindehoff/Indigo-VirtualEnergyMeter</SupportURL>
 
     <Field id="simpleSeparator1" type="separator"/>
 	<Field id="loggingLevel" type="menu">

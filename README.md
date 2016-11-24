@@ -1,2 +1,2 @@
-# Indigo-Plugin-Scaffold
-A scaffold for creating Indigo Plugins
+# Virtual Energy Meter an Indigo Plugin
+
