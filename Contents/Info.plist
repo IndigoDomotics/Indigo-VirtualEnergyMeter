@@ -9,7 +9,7 @@
         <key>IwsApiVersion</key>
         <string>1.0.0</string>
         <key>CFBundleDisplayName</key>
-        <string>Plugin Name</string>
+        <string>Virtual Energy Meter</string>
         <key>CFBundleIdentifier</key>
         <string>se.cobmedia.indigoplugin.virtualenergymeter</string>
         <key>CFBundleVersion</key>
