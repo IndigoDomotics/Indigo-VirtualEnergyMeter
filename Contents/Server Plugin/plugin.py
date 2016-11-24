@@ -10,18 +10,14 @@ import logging
 class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
         super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
 
     def startup(self):
-        self.logger.setLevel(self.pluginPrefs.get("loggingLevel", logging.DEBUG))
+        self.setLogLevel()
         self.logger.debug(u"startup called")
 
     def shutdown(self):
         self.logger.debug(u"shutdown called")
-
-    def toggleDebug(self):
-        self.debug = not self.debug
-        self.pluginPrefs["debug"] = self.debug
 
     def _refreshState(self, dev, logRefresh):
         # As an example here we update the current power (Watts) to a random
@@ -52,8 +48,7 @@ class Plugin(indigo.PluginBase):
                     # Plugins that need to poll out the status from the meter
                     # could do so here, then broadcast back the new values to the
                     # Indigo Server.
-                    self._refreshState(dev, False)
-                self.sleep(2)
+                self.sleep(5)
         except self.StopThread:
             pass  # Optionally catch the StopThread exception and do any needed cleanup.
 
@@ -339,23 +334,7 @@ class Plugin(indigo.PluginBase):
     ######################
     def closedPrefsConfigUi(self, valuesDict, userCancelled):
         if (not userCancelled):
-            if (valuesDict["loggingLevel"] == u"%s" % (logging.DEBUG)):
-                indigo.server.log(u"Setting logging level to Debug")
-                self.pluginPrefs["loggingLevel"] = logging.DEBUG
-            elif (valuesDict["loggingLevel"] == u"%s" % (logging.INFO)):
-                indigo.server.log(u"Setting logging level to Normal")
-                self.pluginPrefs["loggingLevel"] = logging.INFO
-            elif (valuesDict["loggingLevel"] == u"%s" % (logging.WARN)):
-                indigo.server.log(u"Setting logging level to only show warnings, errors and critical logs")
-                self.pluginPrefs["loggingLevel"] = logging.WARN
-            elif (valuesDict["loggingLevel"] == u"%s" % (logging.ERROR)):
-                indigo.server.log(u"Setting logging level to only show errors and critical logs")
-                self.pluginPrefs["loggingLevel"] = logging.ERROR
-            elif (valuesDict["loggingLevel"] == u"%s" % (logging.CRITICAL)):
-                indigo.server.log(u"Setting logging level to only show critical logs")
-                self.pluginPrefs["loggingLevel"] = logging.CRITICAL
-
-            self.logger.setLevel(self.pluginPrefs.get("loggingLevel", logging.DEBUG))
+            self.setLogLevel()
 
     def loggingLevelList(self, filter="", valuesDict=None, typeId="", targetId=0):
         logLevels = [
@@ -366,3 +345,9 @@ class Plugin(indigo.PluginBase):
             (logging.CRITICAL, "Critical")
         ]
         return logLevels
+
+    def setLogLevel(self):
+        indigo.server.log(
+            u"Setting logging level to %s" % (self.loggingLevelList()[self.pluginPrefs["loggingLevel"] / 10 - 1][1]))
+        self.logger.setLevel(self.pluginPrefs.get("loggingLevel", logging.DEBUG))
+        self.debug = (self.logger.level <= logging.DEBUG)
