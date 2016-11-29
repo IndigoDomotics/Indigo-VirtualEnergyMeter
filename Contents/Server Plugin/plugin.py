@@ -53,10 +53,31 @@ class Plugin(indigo.PluginBase):
             pass  # Optionally catch the StopThread exception and do any needed cleanup.
 
     ########################################
+    # Device Creation Callbacks
+    ######################
+    def getDeviceList(self, filter="supportsOnState", valuesDict=None, typeId="", targetId=0):
+        # A little bit of Python list comprehension magic here. Basically, it iterates through
+        # the device list and only adds the device if it has the filter property and is enabled.
+        return [(dev.id, dev.name) for dev in indigo.devices if (hasattr(dev, filter) and dev.enabled)]
+
+    ########################################
     # Validation
     ######################
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
-        return (True, valuesDict)
+        errorDict = indigo.Dict()
+        if typeId == u"virtualDeviceEnergyMeter":
+            for value in valuesDict:
+                if value in [u"maxCurPower", u"minCurPower"]:
+                    try:
+                        valuesDict[value] = float(valuesDict[value])
+                    except ValueError:
+                        errorDict[value] = "The value of this field must be a number"
+                        #errorDict["showAlertText"] = ""
+                        valuesDict[value] = 0
+        if errorDict:
+            return (False, valuesDict, errorDict)
+        else:
+            return (True, valuesDict)
 
     ########################################
     # General Action callback
