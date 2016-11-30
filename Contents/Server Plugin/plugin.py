@@ -5,6 +5,7 @@
 import indigo
 import random
 import logging
+import numpy as np
 
 
 class Plugin(indigo.PluginBase):
@@ -15,6 +16,8 @@ class Plugin(indigo.PluginBase):
     def startup(self):
         self.setLogLevel()
         self.logger.debug(u"startup called")
+        self.parentDevIdsWeUseDict = []
+        indigo.devices.subscribeToChanges()
 
     def shutdown(self):
         self.logger.debug(u"shutdown called")
@@ -58,7 +61,33 @@ class Plugin(indigo.PluginBase):
     def getDeviceList(self, filter="supportsOnState", valuesDict=None, typeId="", targetId=0):
         # A little bit of Python list comprehension magic here. Basically, it iterates through
         # the device list and only adds the device if it has the filter property and is enabled.
-        return [(dev.id, dev.name) for dev in indigo.devices if (hasattr(dev, filter) and dev.enabled)]
+        return [(dev.id, dev.name) for dev in indigo.devices if hasattr(dev, filter)]
+
+    def devicesThatSupportOnState(self, filter="", valuesDict=None, typeId="", targetId=0):
+        menuItems = []
+        for dev in indigo.devices.iter("indigo.relay, indigo.dimmer"):
+            menuItems.append((dev.id, dev.name))
+        for dev in indigo.devices.iter("indigo.sensor, props.SupportsOnState"):
+            menuItems.append((dev.id, dev.name))
+        return menuItems
+
+    def parentDeviceIdChanged(self, valuesDict, typeId, devId):
+        if typeId == u"virtualDeviceEnergyMeter":
+            dev = indigo.devices[int(valuesDict[u"parentDeviceId"])]
+            if u"brightnessLevel" in dev.states:
+                valuesDict[u"parentDeviceDimmer"] = True
+            else:
+                valuesDict[u"parentDeviceDimmer"] = False
+        return valuesDict
+
+    ########################################
+    # Device Com
+    ######################
+    def deviceStartComm(self, dev):
+        self.parentDevIdsWeUseDict.append(int(dev.ownerProps[u"parentDeviceId"]))
+
+    def deviceStopComm(self, dev):
+        self.parentDevIdsWeUseDict.remove(int(dev.ownerProps[u"parentDeviceId"]))
 
     ########################################
     # Validation
@@ -74,10 +103,61 @@ class Plugin(indigo.PluginBase):
                         errorDict[value] = "The value of this field must be a number"
                         #errorDict["showAlertText"] = ""
                         valuesDict[value] = 0
+                elif value == u"parentDeviceId":
+                        valuesDict[value] = int(valuesDict[value])
         if errorDict:
             return (False, valuesDict, errorDict)
         else:
             return (True, valuesDict)
+
+    ########################################
+    # Methods for changes in Device states
+    ########################################
+    def deviceUpdated(self, origDev, newDev):
+        if u"parentDeviceId" in newDev.ownerProps and origDev.ownerProps['parentDeviceId'] != newDev.ownerProps['parentDeviceId']:
+            self.parentDevIdsWeUseDict.remove(int(origDev.ownerProps[u"parentDeviceId"]))
+            self.parentDevIdsWeUseDict.append(int(newDev.ownerProps[u"parentDeviceId"]))
+        if newDev.id not in self.parentDevIdsWeUseDict:
+            return
+        if (u"onOffState" in origDev.states and origDev.states['onOffState'] != newDev.states['onOffState'])\
+                or (u"brightnessLevel" in origDev.states
+                    and origDev.states['brightnessLevel'] != newDev.states['brightnessLevel']):
+            self.logger.debug("The device has changed onOff state or brightness level")
+            keyValueList = []
+            dev = filter(lambda x: x.ownerProps[u"parentDeviceId"] == str(origDev.id), indigo.devices.iter("self"))[0]
+            if "curEnergyLevel" in dev.states:
+                if newDev.states['onOffState']:
+                    level = 1
+                    if u"brightnessLevel" in origDev.states:
+                        #level = float(newDev.states.get("brightnessLevel")) / 100
+                        watts = self.getCurPower(dev, int(newDev.states.get("brightnessLevel")))
+                    else:
+                        watts = float(dev.ownerProps[u"powerAtOn"])
+                    wattsStr = "%.2f W" % (watts)
+                else:
+                    watts = 0.0
+                    wattsStr = "%d W" % (watts)
+                keyValueList.append(
+                    {'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
+
+                # if "accumEnergyTotal" in dev.states:
+                #    simulateKwh = dev.states.get("accumEnergyTotal", 0) + 0.001
+                #   simulateKwhStr = "%.3f kWh" % (simulateKwh)
+                #   if logRefresh:
+                #        indigo.server.log(
+                #            u"received \"%s\" %s to %s" % (dev.name, "energy total", simulateKwhStr))
+                #    keyValueList.append(
+                #        {'key': 'accumEnergyTotal', 'value': simulateKwh, 'uiValue': simulateKwhStr})
+
+            dev.updateStatesOnServer(keyValueList)
+
+    def getCurPower(self, dev, dimLevel):
+        xp = [1, 33, 66, 100]
+        fp = [float(dev.ownerProps[u"powerAt1"]),
+              float(dev.ownerProps[u"powerAt33"]),
+              float(dev.ownerProps[u"powerAt66"]),
+              float(dev.ownerProps[u"powerAt100"])]
+        return np.interp(dimLevel, xp, fp)
 
     ########################################
     # General Action callback

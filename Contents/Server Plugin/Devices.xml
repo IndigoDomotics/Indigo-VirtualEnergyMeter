@@ -30,24 +30,36 @@
 	<Device type="custom" id="virtualDeviceEnergyMeter">
 		<Name>Virtual Device Energy Meter</Name>
 		<ConfigUI>
-			<Field id="name" type="textfield">
-				<Label>Name:</Label>
-			</Field>
-
-			<Field id="energyDevices"
+			<Field id="parentDeviceId"
 				   type="menu">
 				<Label>Parent Device</Label>
 				<List class="self"
-					  filter="supportsOnState"
-					  method="getDeviceList"
+					  filter="onState"
+					  method="devicesThatSupportOnState"
 					  />
+				<CallbackMethod>parentDeviceIdChanged</CallbackMethod>
 			</Field>
-			<Field id="maxCurPower" type="textfield">
-				<Label>Power when on:</Label>
+			<Field type="checkbox" id="parentDeviceDimmer" defaultValue="false" hidden="true">
 			</Field>
-
-			<Field id="minCurPower" type="textfield">
-				<Label>Minimum Power (Dimmer 1%):</Label>
+			<Field id="powerAtOn" type="textfield" enabledBindingId="parentDeviceDimmer" enabledBindingNegate="true"
+				   visibleBindingId="parentDeviceDimmer" visibleBindingValue="false">
+				<Label>Power when On:</Label>
+			</Field>
+			<Field id="powerAt1" type="textfield" enabledBindingId="parentDeviceDimmer"
+				   visibleBindingId="parentDeviceDimmer" visibleBindingValue="true">
+				<Label>Power at 1%:</Label>
+			</Field>
+			<Field id="powerAt33" type="textfield" enabledBindingId="parentDeviceDimmer"
+				   visibleBindingId="parentDeviceDimmer" visibleBindingValue="true">
+				<Label>Power at 33%:</Label>
+			</Field>
+			<Field id="powerAt66" type="textfield" enabledBindingId="parentDeviceDimmer"
+				   visibleBindingId="parentDeviceDimmer" visibleBindingValue="true">
+				<Label>Power at 66%:</Label>
+			</Field>
+			<Field id="powerAt100" type="textfield" enabledBindingId="parentDeviceDimmer"
+				   visibleBindingId="parentDeviceDimmer" visibleBindingValue="true">
+				<Label>Power at 100%:</Label>
 			</Field>
 			<!-- This hidden field forces property SupportsEnergyMeter to True
 			which enables the energy meter states and UI.
