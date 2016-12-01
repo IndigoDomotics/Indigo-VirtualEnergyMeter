@@ -6,6 +6,7 @@ import indigo
 import random
 import logging
 import numpy as np
+import time
 
 
 class Plugin(indigo.PluginBase):
@@ -22,23 +23,32 @@ class Plugin(indigo.PluginBase):
     def shutdown(self):
         self.logger.debug(u"shutdown called")
 
-    def _refreshState(self, dev, logRefresh):
-        # As an example here we update the current power (Watts) to a random
-        # value, and we increase the kWh by a smidge.
+    def _refreshState(self, dev, logRefresh=False):
+        # TODO: Fix error handling if parentDevice don't exits
+        parentDevice = indigo.devices[int(dev.ownerProps[u"parentDeviceId"])]
+
         keyValueList = []
         if "curEnergyLevel" in dev.states:
-            simulateWatts = random.randint(0, 500)
-            simulateWattsStr = "%d W" % (simulateWatts)
-            if logRefresh:
-                indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "power load", simulateWattsStr))
-            keyValueList.append({'key': 'curEnergyLevel', 'value': simulateWatts, 'uiValue': simulateWattsStr})
+            if parentDevice.states['onOffState']:
+                if u"brightnessLevel" in parentDevice.states:
+                    watts = self.getCurPower(dev, int(parentDevice.states.get("brightnessLevel")))
+                else:
+                    watts = float(dev.ownerProps[u"powerAtOn"])
+                wattsStr = "%.2f W" % (watts)
+            else:
+                watts = 0.0
+                wattsStr = "%d W" % (watts)
+            keyValueList.append(
+                {'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
 
-        if "accumEnergyTotal" in dev.states:
-            simulateKwh = dev.states.get("accumEnergyTotal", 0) + 0.001
-            simulateKwhStr = "%.3f kWh" % (simulateKwh)
-            if logRefresh:
-                indigo.server.log(u"received \"%s\" %s to %s" % (dev.name, "energy total", simulateKwhStr))
-            keyValueList.append({'key': 'accumEnergyTotal', 'value': simulateKwh, 'uiValue': simulateKwhStr})
+            # if "accumEnergyTotal" in dev.states:
+            #    simulateKwh = dev.states.get("accumEnergyTotal", 0) + 0.001
+            #   simulateKwhStr = "%.3f kWh" % (simulateKwh)
+            #   if logRefresh:
+            #        indigo.server.log(
+            #            u"received \"%s\" %s to %s" % (dev.name, "energy total", simulateKwhStr))
+            #    keyValueList.append(
+            #        {'key': 'accumEnergyTotal', 'value': simulateKwh, 'uiValue': simulateKwhStr})
 
         dev.updateStatesOnServer(keyValueList)
 
@@ -48,10 +58,8 @@ class Plugin(indigo.PluginBase):
                 for dev in indigo.devices.iter("self"):
                     if not dev.enabled or not dev.configured:
                         continue
-                    # Plugins that need to poll out the status from the meter
-                    # could do so here, then broadcast back the new values to the
-                    # Indigo Server.
-                self.sleep(5)
+                    self._refreshState(dev)
+                self.sleep(60)
         except self.StopThread:
             pass  # Optionally catch the StopThread exception and do any needed cleanup.
 
@@ -85,6 +93,7 @@ class Plugin(indigo.PluginBase):
     ######################
     def deviceStartComm(self, dev):
         self.parentDevIdsWeUseDict.append(int(dev.ownerProps[u"parentDeviceId"]))
+        self._refreshState(dev)
 
     def deviceStopComm(self, dev):
         self.parentDevIdsWeUseDict.remove(int(dev.ownerProps[u"parentDeviceId"]))
@@ -96,6 +105,7 @@ class Plugin(indigo.PluginBase):
         errorDict = indigo.Dict()
         if typeId == u"virtualDeviceEnergyMeter":
             for value in valuesDict:
+                #TODO: update these
                 if value in [u"maxCurPower", u"minCurPower"]:
                     try:
                         valuesDict[value] = float(valuesDict[value])
@@ -105,6 +115,7 @@ class Plugin(indigo.PluginBase):
                         valuesDict[value] = 0
                 elif value == u"parentDeviceId":
                         valuesDict[value] = int(valuesDict[value])
+
         if errorDict:
             return (False, valuesDict, errorDict)
         else:
@@ -117,39 +128,16 @@ class Plugin(indigo.PluginBase):
         if u"parentDeviceId" in newDev.ownerProps and origDev.ownerProps['parentDeviceId'] != newDev.ownerProps['parentDeviceId']:
             self.parentDevIdsWeUseDict.remove(int(origDev.ownerProps[u"parentDeviceId"]))
             self.parentDevIdsWeUseDict.append(int(newDev.ownerProps[u"parentDeviceId"]))
+            self._refreshState(newDev)
         if newDev.id not in self.parentDevIdsWeUseDict:
             return
         if (u"onOffState" in origDev.states and origDev.states['onOffState'] != newDev.states['onOffState'])\
                 or (u"brightnessLevel" in origDev.states
                     and origDev.states['brightnessLevel'] != newDev.states['brightnessLevel']):
-            self.logger.debug("The device has changed onOff state or brightness level")
-            keyValueList = []
+            self.logger.debug("The parent device has changed onOff state or brightness level")
+            #TODO: Fix error handling if dev don't exists
             dev = filter(lambda x: x.ownerProps[u"parentDeviceId"] == str(origDev.id), indigo.devices.iter("self"))[0]
-            if "curEnergyLevel" in dev.states:
-                if newDev.states['onOffState']:
-                    level = 1
-                    if u"brightnessLevel" in origDev.states:
-                        #level = float(newDev.states.get("brightnessLevel")) / 100
-                        watts = self.getCurPower(dev, int(newDev.states.get("brightnessLevel")))
-                    else:
-                        watts = float(dev.ownerProps[u"powerAtOn"])
-                    wattsStr = "%.2f W" % (watts)
-                else:
-                    watts = 0.0
-                    wattsStr = "%d W" % (watts)
-                keyValueList.append(
-                    {'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
-
-                # if "accumEnergyTotal" in dev.states:
-                #    simulateKwh = dev.states.get("accumEnergyTotal", 0) + 0.001
-                #   simulateKwhStr = "%.3f kWh" % (simulateKwh)
-                #   if logRefresh:
-                #        indigo.server.log(
-                #            u"received \"%s\" %s to %s" % (dev.name, "energy total", simulateKwhStr))
-                #    keyValueList.append(
-                #        {'key': 'accumEnergyTotal', 'value': simulateKwh, 'uiValue': simulateKwhStr})
-
-            dev.updateStatesOnServer(keyValueList)
+            self._refreshState(dev)
 
     def getCurPower(self, dev, dimLevel):
         xp = [1, 33, 66, 100]
