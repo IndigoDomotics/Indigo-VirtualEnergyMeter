@@ -21,6 +21,28 @@
 	 Devices must also specify a unique typeID - so, for instance, if you define
 	 2 relay type devices then your plugin can distinguish between the two by
 	 the typeID.
+
+	<Device type="custom" id="virtualGroupEnergyMeter">
+		<Name>Virtual Group Energy Meter</Name>
+		<ConfigUI>
+			<Field id="name" type="textfield">
+				<Label>Name:</Label>
+			</Field>
+
+			<Field id="energyDevices"
+				   type="list">
+				<Label>Available Energy Meters</Label>
+				<List class="indigo.devices"
+					  filter="props.SupportsEnergyMeter"
+					  />
+			</Field>
+			<Field type="checkbox" id="SupportsEnergyMeter" defaultValue="true" hidden="true" />
+			<Field type="checkbox" id="SupportsEnergyMeterCurPower" defaultValue="true" hidden="true" />
+		</ConfigUI>
+		<States>
+
+		</States>
+	</Device>
 -->
 
 <Devices>
@@ -73,31 +95,6 @@
 				<TriggerLabel>Last Accumulate Energy Total Timestamp</TriggerLabel>
 				<ControlPageLabel>Last Accumulate Energy Total Timestamp</ControlPageLabel>
 			</State>
-		</States>
-	</Device>
-
-	<Device type="custom" id="virtualGroupEnergyMeter">
-		<Name>Virtual Group Energy Meter</Name>
-		<ConfigUI>
-			<Field id="name" type="textfield">
-				<Label>Name:</Label>
-			</Field>
-
-			<Field id="energyDevices"
-				   type="list">
-				<Label>Available Energy Meters</Label>
-				<List class="indigo.devices"
-					  filter="props.SupportsEnergyMeter"
-					  />
-			</Field>
-			<!-- This hidden field forces property SupportsEnergyMeter to True
-			which enables the energy meter states and UI.
-			-->
-			<Field type="checkbox" id="SupportsEnergyMeter" defaultValue="true" hidden="true" />
-			<Field type="checkbox" id="SupportsEnergyMeterCurPower" defaultValue="true" hidden="true" />
-		</ConfigUI>
-		<States>
-
 		</States>
 	</Device>
 </Devices>

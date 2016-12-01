@@ -6,8 +6,5 @@
 	 back to the user you can post information into the Event Log.
 -->
 <MenuItems>
-	<MenuItem id="menu1">
-		<Name>Set All to 1 Temperature Sensor</Name>
-		<CallbackMethod>changeTempSensorCountTo1</CallbackMethod>
-	</MenuItem>
+
 </MenuItems>

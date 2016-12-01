@@ -3,7 +3,6 @@
 ####################
 
 import indigo
-import random
 import logging
 import numpy as np
 import time
