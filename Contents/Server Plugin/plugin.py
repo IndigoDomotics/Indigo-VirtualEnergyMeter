@@ -165,18 +165,19 @@ class Plugin(indigo.PluginBase):
                     and origDev.states['brightnessLevel'] != newDev.states['brightnessLevel']):
             self.logger.debug("The parent device has changed onOff state or brightness level")
             #TODO: Fix error handling if dev don't exists
-            dev = filter(lambda x: x.ownerProps[u"parentDeviceId"] == str(origDev.id), indigo.devices.iter("self"))[0]
-            if origDev.states['onOffState']:
-                if u"brightnessLevel" in origDev.states:
-                    watts = self.getCurPower(dev, int(origDev.states.get("brightnessLevel")))
+            devs = filter(lambda x: x.ownerProps[u"parentDeviceId"] == str(origDev.id), indigo.devices.iter("self"))
+            for dev in devs:
+                if origDev.states['onOffState']:
+                    if u"brightnessLevel" in origDev.states:
+                        watts = self.getCurPower(dev, int(origDev.states.get("brightnessLevel")))
+                    else:
+                        watts = float(dev.ownerProps[u"powerAtOn"])
+                    accumEnergyTotalTS = dev.states.get("accumEnergyTotalTS", ts)
+                    energy = ((ts - accumEnergyTotalTS) / 3600 * watts) / 1000
                 else:
-                    watts = float(dev.ownerProps[u"powerAtOn"])
-                accumEnergyTotalTS = dev.states.get("accumEnergyTotalTS", ts)
-                energy = ((ts - accumEnergyTotalTS) / 3600 * watts) / 1000
-            else:
-                energy = 0
-            self._addAccumEnergy(dev, energy, ts)
-            self._refreshState(dev)
+                    energy = 0
+                self._addAccumEnergy(dev, energy, ts)
+                self._refreshState(dev)
 
     def getCurPower(self, dev, dimLevel):
         xp = [1, 33, 66, 100]
