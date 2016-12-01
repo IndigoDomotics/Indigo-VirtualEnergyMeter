@@ -8,7 +8,7 @@ else:
     print "calling restart_plugin with '%s'" % plugin_id
     plugin_script = '''plugin = indigo.server.getPlugin("%s")
 if plugin.isEnabled():
-   
+
    plugin.restartAndDebug()
    return "Plugin %s restarted"
 else:
