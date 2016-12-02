@@ -6,13 +6,14 @@ import indigo
 import logging
 import numpy as np
 import time
-
+from ghpu import GitHubPluginUpdater
 
 class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
         super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
         self.logger.setLevel(logging.INFO)
         self.parentDevIdsWeUseDict = []
+        self.updater = GitHubPluginUpdater(self)
 
     def startup(self):
         self.setLogLevel()
@@ -67,7 +68,8 @@ class Plugin(indigo.PluginBase):
                     if not dev.enabled or not dev.configured:
                         continue
                     self._refreshState(dev)
-                self.sleep(60)
+                self.updater.checkForUpdate()
+                self.sleep(300)
         except self.StopThread:
             pass  # Optionally catch the StopThread exception and do any needed cleanup.
 
@@ -114,7 +116,6 @@ class Plugin(indigo.PluginBase):
         errorDict = indigo.Dict()
         if typeId == u"virtualDeviceEnergyMeter":
             for value in valuesDict:
-                # TODO: update these
                 if valuesDict['parentDeviceDimmer']:
                     fieldsToValidate = [u"powerAt1", u"powerAt33", u"powerAt66", u"powerAt100"]
                 else:
@@ -487,3 +488,13 @@ class Plugin(indigo.PluginBase):
         self.debug = (self.logger.level <= logging.DEBUG)
         indigo.server.log(
             u"Setting logging level to %s" % (self.loggingLevelList()[int(self.pluginPrefs["loggingLevel"]) / 10 - 1][1]))
+
+
+    ########################################
+    # Plugin GitHub Updater
+    ######################
+    def updatePlugin(self):
+        self.updater.update()
+
+    def checkForUpdates(self):
+        self.updater.checkForUpdate()
