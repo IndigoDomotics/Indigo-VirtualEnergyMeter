@@ -61,7 +61,7 @@
 					  />
 				<CallbackMethod>parentDeviceIdChanged</CallbackMethod>
 			</Field>
-			<Field type="checkbox" id="parentDeviceDimmer" defaultValue="false" hidden="true">
+			<Field type="checkbox" id="parentDeviceDimmer" defaultValue="true" hidden="true">
 			</Field>
 			<Field id="powerAtOn" type="textfield" enabledBindingId="parentDeviceDimmer" enabledBindingNegate="true"
 				   visibleBindingId="parentDeviceDimmer" visibleBindingValue="false">

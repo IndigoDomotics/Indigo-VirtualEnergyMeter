@@ -114,13 +114,16 @@ class Plugin(indigo.PluginBase):
         errorDict = indigo.Dict()
         if typeId == u"virtualDeviceEnergyMeter":
             for value in valuesDict:
-                #TODO: update these
-                if value in [u"maxCurPower", u"minCurPower"]:
+                # TODO: update these
+                if valuesDict['parentDeviceDimmer']:
+                    fieldsToValidate = [u"powerAt1", u"powerAt33", u"powerAt66", u"powerAt100"]
+                else:
+                    fieldsToValidate = [u"powerAtOn"]
+                if value in fieldsToValidate:
                     try:
                         valuesDict[value] = float(valuesDict[value])
                     except ValueError:
                         errorDict[value] = "The value of this field must be a number"
-                        #errorDict["showAlertText"] = ""
                         valuesDict[value] = 0
                 elif value == u"parentDeviceId":
                         valuesDict[value] = int(valuesDict[value])
@@ -477,7 +480,10 @@ class Plugin(indigo.PluginBase):
         return logLevels
 
     def setLogLevel(self):
-        self.logger.setLevel(int(self.pluginPrefs.get("loggingLevel"), logging.DEBUG))
+        logLevel = self.pluginPrefs.get("loggingLevel", logging.DEBUG)
+        if type(logLevel) is not int:
+            logLevel = int(logLevel)
+        self.logger.setLevel(logLevel)
         self.debug = (self.logger.level <= logging.DEBUG)
         indigo.server.log(
             u"Setting logging level to %s" % (self.loggingLevelList()[int(self.pluginPrefs["loggingLevel"]) / 10 - 1][1]))
