@@ -12,12 +12,13 @@ class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
         super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
         self.logger.setLevel(logging.INFO)
+        self.parentDevIdsWeUseDict = []
 
     def startup(self):
         self.setLogLevel()
         self.logger.debug(u"startup called")
-        self.parentDevIdsWeUseDict = []
         indigo.devices.subscribeToChanges()
+        self.parentDevIdsWeUseDict = []
 
     def shutdown(self):
         self.logger.debug(u"shutdown called")
@@ -476,7 +477,7 @@ class Plugin(indigo.PluginBase):
         return logLevels
 
     def setLogLevel(self):
-        indigo.server.log(
-            u"Setting logging level to %s" % (self.loggingLevelList()[self.pluginPrefs["loggingLevel"] / 10 - 1][1]))
-        self.logger.setLevel(self.pluginPrefs.get("loggingLevel", logging.DEBUG))
+        self.logger.setLevel(int(self.pluginPrefs.get("loggingLevel"), logging.DEBUG))
         self.debug = (self.logger.level <= logging.DEBUG)
+        indigo.server.log(
+            u"Setting logging level to %s" % (self.loggingLevelList()[int(self.pluginPrefs["loggingLevel"]) / 10 - 1][1]))
