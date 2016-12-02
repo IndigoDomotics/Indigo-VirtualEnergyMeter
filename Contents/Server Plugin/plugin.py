@@ -481,7 +481,7 @@ class Plugin(indigo.PluginBase):
         return logLevels
 
     def setLogLevel(self):
-        logLevel = self.pluginPrefs.get("loggingLevel", logging.DEBUG)
+        logLevel = self.pluginPrefs.get("loggingLevel", logging.INFO)
         if type(logLevel) is not int:
             logLevel = int(logLevel)
         self.logger.setLevel(logLevel)
