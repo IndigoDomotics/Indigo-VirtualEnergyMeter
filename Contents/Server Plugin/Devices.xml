@@ -91,7 +91,11 @@
 			<Field type="checkbox" id="SupportsEnergyMeterCurPower" defaultValue="true" hidden="true" />
 		</ConfigUI>
 		<States>
-
+			<State id="accumEnergyTotalTS">
+				<ValueType>Integer</ValueType>
+				<TriggerLabel>Last Accumulate Energy Total Timestamp</TriggerLabel>
+				<ControlPageLabel>Last Accumulate Energy Total Timestamp</ControlPageLabel>
+			</State>
 		</States>
 	</Device>
 </Devices>
