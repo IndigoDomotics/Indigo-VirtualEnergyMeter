@@ -6,5 +6,16 @@
 	 back to the user you can post information into the Event Log.
 -->
 <MenuItems>
-
+  <MenuItem id="logWatchedDevices">
+    <Name>Log Watched Devicess</Name>
+    <CallbackMethod>logWatchedDevices</CallbackMethod>
+  </MenuItem>
+  <MenuItem id="checkForUpdates">
+    <Name>Check for Updates</Name>
+    <CallbackMethod>checkForUpdates</CallbackMethod>
+  </MenuItem>
+  <MenuItem id="updatePlugin">
+    <Name>Update Plugin</Name>
+    <CallbackMethod>updatePlugin</CallbackMethod>
+  </MenuItem>
 </MenuItems>

@@ -4,6 +4,9 @@
 		 sensitive help link on the config UI - otherwise it will just link
 		 to the URL specified in the AboutInformation element. -->
 	<SupportURL>https://github.com/lindehoff/Indigo-VirtualEnergyMeter</SupportURL>
+	<Field id="deviceUpdate" type="textfield"  defaultValue="300">
+		<Label>Polling time (sec):</Label>
+	</Field>
     <Field id="simpleSeparator1" type="separator"/>
 	<Field id="loggingLevel" type="menu">
 	    <Label>Logging level:</Label>
