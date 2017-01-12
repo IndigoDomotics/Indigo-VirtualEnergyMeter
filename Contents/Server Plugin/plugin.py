@@ -98,7 +98,7 @@ class Plugin(indigo.PluginBase):
                 if time.time()-ts > 3600*12:
                     self.updater.checkForUpdate()
                     ts = time.time()
-                self.sleep(self.pluginPrefs.get("deviceUpdate", 300))
+                self.sleep(int(self.pluginPrefs.get("deviceUpdate", 300)))
         except self.StopThread:
             pass  # Optionally catch the StopThread exception and do any needed cleanup.
 
