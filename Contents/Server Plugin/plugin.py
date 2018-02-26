@@ -6,14 +6,12 @@ import indigo
 import logging
 import numpy as np
 import time
-from ghpu import GitHubPluginUpdater
 
 class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
         super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
         self.logger.setLevel(logging.INFO)
         self.parentDevIdsWeUseDict = []
-        self.updater = GitHubPluginUpdater(self)
 
     def startup(self):
         self.setLogLevel()
@@ -87,17 +85,11 @@ class Plugin(indigo.PluginBase):
 
     def runConcurrentThread(self):
         try:
-            ts = time.time()
-            self.updater.checkForUpdate()
             while True:
                 for dev in indigo.devices.iter("self"):
                     if not dev.enabled or not dev.configured:
                         continue
                     self._refreshState(dev)
-
-                if time.time()-ts > 3600*12:
-                    self.updater.checkForUpdate()
-                    ts = time.time()
                 self.sleep(int(self.pluginPrefs.get("deviceUpdate", 300)))
         except self.StopThread:
             pass  # Optionally catch the StopThread exception and do any needed cleanup.
@@ -644,14 +636,3 @@ class Plugin(indigo.PluginBase):
         self.debug = (self.logger.level <= logging.DEBUG)
         indigo.server.log(
             u"Setting logging level to %s" % (self.loggingLevelList()[int(self.pluginPrefs["loggingLevel"]) / 10 - 1][1]))
-
-
-    ########################################
-    # Plugin GitHub Updater
-    ######################
-    def updatePlugin(self):
-        self.updater.update()
-
-    def checkForUpdates(self):
-        self.updater.checkForUpdate()
-

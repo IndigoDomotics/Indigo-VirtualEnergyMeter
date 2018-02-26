@@ -1,7 +1,3 @@
 <?xml version="1.0"?>
 <Events>
-    <SupportURL>https://github.com/lindehoff/Indigo-VirtualEnergyMeter</SupportURL>
-    <Event id="updateAvailable">
-        <Name>Plugin Update Available</Name>
-    </Event>
 </Events>
