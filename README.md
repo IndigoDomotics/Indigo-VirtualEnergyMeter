@@ -15,6 +15,3 @@ Or all one energy meter for the entire house.
 
 1. Download latest release [here](https://github.com/lindehoff/Indigo-VirtualEnergyMeter/releases)
 2. Follow [standard plugin installation process](http://bit.ly/1e1Vc7b)
-
-## Legal Disclaimer
-This plugin have been tested before release but you use the plugin at your own risk.
