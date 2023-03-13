@@ -2,7 +2,12 @@
 # -*- coding: utf-8 -*-
 ####################
 
-import indigo
+try:
+    # noinspection PyUnresolvedReferences
+    import indigo
+except ImportError:
+    pass
+
 import logging
 import numpy as np
 import time
@@ -15,30 +20,30 @@ class Plugin(indigo.PluginBase):
 
     def startup(self):
         self.setLogLevel()
-        self.logger.debug(u"startup called")
+        self.logger.debug("startup called")
         indigo.devices.subscribeToChanges()
         self.parentDevIdsWeUseDict = []
 
     def shutdown(self):
-        self.logger.debug(u"shutdown called")
+        self.logger.debug("shutdown called")
 
     def _refreshState(self, dev, logRefresh=False):
 
         keyValueList = []
-        if dev.deviceTypeId == u"virtualDeviceEnergyMeter":
-            # TODO: Fix error handling if parentDevice don't exits
-            if int(dev.ownerProps[u"parentDeviceId"]) not in indigo.devices:
-                self.logger.warn(u"Parent device  does not exits any more ")
+        if dev.deviceTypeId == "virtualDeviceEnergyMeter":
+            # TODO: Fix error handling if parentDevice doesn't exist
+            if int(dev.ownerProps["parentDeviceId"]) not in indigo.devices:
+                self.logger.warn("Parent device  does not exist any more")
                 return
-            parentDevice = indigo.devices[int(dev.ownerProps[u"parentDeviceId"])]
+            parentDevice = indigo.devices[int(dev.ownerProps["parentDeviceId"])]
             ts = time.time()
             if "curEnergyLevel" in dev.states:
                 if parentDevice.states['onOffState']:
-                    if u"brightnessLevel" in parentDevice.states:
+                    if "brightnessLevel" in parentDevice.states:
                         watts = self.getCurPower(dev, int(parentDevice.states.get("brightnessLevel")))
                     else:
-                        watts = float(dev.ownerProps[u"powerAtOn"])
-                    wattsStr = "%.2f W" % (watts)
+                        watts = float(dev.ownerProps["powerAtOn"])
+                    wattsStr = f"{watts:.2f} W"
                     accumEnergyTotalTS = dev.states.get("accumEnergyTotalTS", ts)
                     if accumEnergyTotalTS == 0:
                         accumEnergyTotalTS = ts
@@ -46,24 +51,24 @@ class Plugin(indigo.PluginBase):
                     self._addAccumEnergy(dev, energy, ts)
                 else:
                     watts = 0.0
-                    wattsStr = "%d W" % (watts)
+                    wattsStr = f"{watts} W"
                     self._addAccumEnergy(dev, 0, ts)
                 keyValueList.append(
                     {'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
-        elif dev.deviceTypeId == u"virtualGroupEnergyMeter" and u"childEnergyMeters" in dev.ownerProps:
+        elif dev.deviceTypeId == "virtualGroupEnergyMeter" and "childEnergyMeters" in dev.ownerProps:
             ts = time.time()
             accumEnergyTotalTS = dev.states.get("accumEnergyTotalTS", ts)
             if accumEnergyTotalTS == 0:
                 accumEnergyTotalTS = ts
             watts = 0.0
             power = 0.0
-            for devId in dev.ownerProps[u"childEnergyMeters"]:
+            for devId in dev.ownerProps["childEnergyMeters"]:
                 if int(devId) in indigo.devices:
                     childWatt = indigo.devices[int(devId)].states.get('curEnergyLevel', 0)
                     watts += childWatt
                     power += ((ts - accumEnergyTotalTS) / 3600 * childWatt) / 1000
             self._addAccumEnergy(dev, power, ts)
-            wattsStr = "%.2f W" % (watts)
+            wattsStr = f"{watts:.2f} W"
             keyValueList.append(
                 {'key': 'curEnergyLevel', 'value': watts, 'uiValue': wattsStr})
         dev.updateStatesOnServer(keyValueList)
@@ -72,12 +77,12 @@ class Plugin(indigo.PluginBase):
         keyValueList = []
         if "accumEnergyTotal" in dev.states:
             accumKwh = dev.states.get("accumEnergyTotal", 0) + energy
-            accumKwhStr = "%.3f kWh" % (accumKwh)
+            accumKwhStr = f"{accumKwh:.3f} kWh"
             keyValueList.append(
                 {'key': 'accumEnergyTotal', 'value': accumKwh, 'uiValue': accumKwhStr})
             if resetTS:
                 keyValueList.append(
-                    {'key': 'accumEnergyTotalTS', 'value': ts, 'uiValue': "%d" % ts})
+                    {'key': 'accumEnergyTotalTS', 'value': ts, 'uiValue': f"{ts}"})
             if resetWatt:
                 keyValueList.append(
                     {'key': 'curEnergyLevel', 'value': 0, 'uiValue': "0 Watt"})
@@ -96,7 +101,7 @@ class Plugin(indigo.PluginBase):
 
     def logWatchedDevices(self):
         for devId in self.parentDevIdsWeUseDict:
-            indigo.server.log(u"%s(%d)" % (indigo.devices[devId].name, devId))
+            indigo.server.log(f"{indigo.devices[devId].name}({devId})")
 
     ########################################
     # Device Creation Callbacks
@@ -115,41 +120,41 @@ class Plugin(indigo.PluginBase):
         return menuItems
 
     def parentDeviceIdChanged(self, valuesDict, typeId, devId):
-        if typeId == u"virtualDeviceEnergyMeter":
-            dev = indigo.devices[int(valuesDict[u"parentDeviceId"])]
-            if u"brightnessLevel" in dev.states:
-                valuesDict[u"parentDeviceDimmer"] = True
+        if typeId == "virtualDeviceEnergyMeter":
+            dev = indigo.devices[int(valuesDict["parentDeviceId"])]
+            if "brightnessLevel" in dev.states:
+                valuesDict["parentDeviceDimmer"] = True
             else:
-                valuesDict[u"parentDeviceDimmer"] = False
+                valuesDict["parentDeviceDimmer"] = False
         return valuesDict
 
     ########################################
     # Device Com
     ######################
     def deviceStartComm(self, dev):
-        if dev.deviceTypeId == u"virtualDeviceEnergyMeter":
-            if int(dev.ownerProps[u"parentDeviceId"]) not in indigo.devices:
-                self.logger.warn(u"Parent device does not exits any more for device %s" % dev.name)
+        if dev.deviceTypeId == "virtualDeviceEnergyMeter":
+            if int(dev.ownerProps["parentDeviceId"]) not in indigo.devices:
+                self.logger.warn(f"Parent device does not exist any more for device {dev.name}")
             else:
-                self.parentDevIdsWeUseDict.append(int(dev.ownerProps[u"parentDeviceId"]))
-        elif dev.deviceTypeId == u"virtualGroupEnergyMeter":
-            for devId in dev.ownerProps[u"childEnergyMeters"]:
+                self.parentDevIdsWeUseDict.append(int(dev.ownerProps["parentDeviceId"]))
+        elif dev.deviceTypeId == "virtualGroupEnergyMeter":
+            for devId in dev.ownerProps["childEnergyMeters"]:
                 if int(devId) not in indigo.devices:
-                    self.logger.warn(u"Child device %s does not exits any more for device %s" % (devId, dev.name))
+                    self.logger.warn(f"Child device {devId} does not exist any more for device {dev.name}")
                 else:
                     self.parentDevIdsWeUseDict.append(int(devId))
         self._refreshState(dev)
 
     def deviceStopComm(self, dev):
-        if dev.deviceTypeId == u"virtualDeviceEnergyMeter":
-            if int(dev.ownerProps[u"parentDeviceId"]) not in indigo.devices:
-                self.logger.warn(u"Parent device does not exits any more for device %s" % dev.name)
+        if dev.deviceTypeId == "virtualDeviceEnergyMeter":
+            if int(dev.ownerProps["parentDeviceId"]) not in indigo.devices:
+                self.logger.warn(f"Parent device does not exist any more for device {dev.name}")
             else:
-                self.parentDevIdsWeUseDict.remove(int(dev.ownerProps[u"parentDeviceId"]))
-        elif dev.deviceTypeId == u"virtualGroupEnergyMeter":
-            for devId in dev.ownerProps[u"childEnergyMeters"]:
+                self.parentDevIdsWeUseDict.remove(int(dev.ownerProps["parentDeviceId"]))
+        elif dev.deviceTypeId == "virtualGroupEnergyMeter":
+            for devId in dev.ownerProps["childEnergyMeters"]:
                 if int(devId) not in indigo.devices:
-                    self.logger.warn(u"Child device %s does not exits any more for device %s" % (devId, dev.name))
+                    self.logger.warn(f"Child device {devId} does not exist any more for device {dev.name}")
                 else:
                     self.parentDevIdsWeUseDict.remove(int(devId))
         self._refreshState(dev)
@@ -159,19 +164,19 @@ class Plugin(indigo.PluginBase):
     ######################
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
         errorDict = indigo.Dict()
-        if typeId == u"virtualDeviceEnergyMeter":
+        if typeId == "virtualDeviceEnergyMeter":
             for value in valuesDict:
                 if valuesDict['parentDeviceDimmer']:
-                    fieldsToValidate = [u"powerAt1", u"powerAt33", u"powerAt66", u"powerAt100"]
+                    fieldsToValidate = ["powerAt1", "powerAt33", "powerAt66", "powerAt100"]
                 else:
-                    fieldsToValidate = [u"powerAtOn"]
+                    fieldsToValidate = ["powerAtOn"]
                 if value in fieldsToValidate:
                     try:
                         valuesDict[value] = float(valuesDict[value])
                     except ValueError:
                         errorDict[value] = "The value of this field must be a number"
                         valuesDict[value] = 0
-                elif value == u"parentDeviceId":
+                elif value == "parentDeviceId":
                         valuesDict[value] = int(valuesDict[value])
         if errorDict:
             return (False, valuesDict, errorDict)
@@ -192,25 +197,21 @@ class Plugin(indigo.PluginBase):
     # Methods for changes in Device states
     ########################################
     def deviceDeleted(self, dev):
-        self.logger.debug(u"Device %s deleted" % (dev.name))
+        self.logger.debug(f"Device {dev.name} deleted")
 
         if dev.id in self.parentDevIdsWeUseDict:
             ts = time.time()
-            deviceEnergyMeters = filter(
-                lambda x: x.deviceTypeId == u"virtualDeviceEnergyMeter" and x.ownerProps[u"parentDeviceId"] == str(
-                    dev.id), indigo.devices.iter("self"))
+            deviceEnergyMeters = list(filter(lambda x: x.deviceTypeId == "virtualDeviceEnergyMeter" and x.ownerProps["parentDeviceId"] == str(dev.id), indigo.devices.iter("self")))
             for deviceEnergyMeter in deviceEnergyMeters:
-                self.logger.warn(u"Parent device %s has been deleted, "
-                                 u"you must update Virtual Energy Device %s or deleted it."
-                                 % (dev.name, deviceEnergyMeter.name))
+                self.logger.warn(f"Parent device {dev.name} has been deleted, you must update Virtual Energy Device {deviceEnergyMeter.name} or delete it.")
                 if dev.states['onOffState']:
-                    self.logger.debug(u"Parent device %s is turned on" % (dev.name))
-                    if u"brightnessLevel" in dev.states:
-                        self.logger.debug(u"Parent device %s is a dimmer" % (dev.name))
+                    self.logger.debug(f"Parent device {dev.name} is turned on")
+                    if "brightnessLevel" in dev.states:
+                        self.logger.debug(f"Parent device {dev.name} is a dimmer")
                         watts = self.getCurPower(deviceEnergyMeter, int(dev.states.get("brightnessLevel")))
                     else:
-                        self.logger.debug(u"Parent device %s is not a dimmer" % (dev.name))
-                        watts = float(deviceEnergyMeter.ownerProps[u"powerAtOn"])
+                        self.logger.debug(f"Parent device {dev.name} is not a dimmer")
+                        watts = float(deviceEnergyMeter.ownerProps["powerAtOn"])
                     accumEnergyTotalTS = deviceEnergyMeter.states.get("accumEnergyTotalTS", ts)
                     energy = ((ts - accumEnergyTotalTS) / 3600 * watts) / 1000
                 else:
@@ -218,17 +219,13 @@ class Plugin(indigo.PluginBase):
 
                 self._addAccumEnergy(deviceEnergyMeter, energy, ts, True, True)
 
-            groupEnergyMeters = filter(
-                lambda x: x.deviceTypeId == u"virtualGroupEnergyMeter" and str(
-                dev.id) in x.ownerProps[u"childEnergyMeters"], indigo.devices.iter("self"))
+            groupEnergyMeters = list(filter(lambda x: x.deviceTypeId == "virtualGroupEnergyMeter" and str(dev.id) in x.ownerProps["childEnergyMeters"], indigo.devices.iter("self")))
 
             for groupEnergyMeter in groupEnergyMeters:
-                self.logger.warn(u"Child device %s has been deleted, "
-                                 u"it has been removed from Virtual Group Energy Meter %s"
-                                 % (dev.name, groupEnergyMeter.name))
+                self.logger.warn(f"Child device {dev.name} has been deleted, it has been removed from Virtual Group Energy Meter {groupEnergyMeter.name}")
                 accumEnergyTotalTS = groupEnergyMeter.states.get("accumEnergyTotalTS", ts)
                 power = 0.0
-                for devId in groupEnergyMeter.ownerProps[u"childEnergyMeters"]:
+                for devId in groupEnergyMeter.ownerProps["childEnergyMeters"]:
                     if devId == str(dev.id):
                         watt = dev.states.get('curEnergyLevel', 0)
                         power = ((ts - accumEnergyTotalTS) / 3600 * watt) / 1000
@@ -237,42 +234,42 @@ class Plugin(indigo.PluginBase):
                         power += ((ts - accumEnergyTotalTS) / 3600 * childWatt) / 1000
                 self._addAccumEnergy(dev, power, ts, True, True)
 
-                groupEnergyMeter.ownerProps[u"childEnergyMeters"].remove(str(dev.id))
-            self.parentDevIdsWeUseDict = filter(lambda a: a != dev.id, self.parentDevIdsWeUseDict)
+                groupEnergyMeter.ownerProps["childEnergyMeters"].remove(str(dev.id))
+            self.parentDevIdsWeUseDict = list(filter(lambda a: a != dev.id, self.parentDevIdsWeUseDict))
 
         indigo.PluginBase.deviceDeleted(self, dev)  # be sure and call parent function
 
     def deviceUpdated(self, origDev, newDev):
         ts = time.time()
-        if newDev.deviceTypeId == u"virtualDeviceEnergyMeter" or newDev.deviceTypeId == u"virtualGroupEnergyMeter":
-            self.logger.debug(u"Device %s has change" % (newDev.name))
+        if newDev.deviceTypeId == "virtualDeviceEnergyMeter" or newDev.deviceTypeId == "virtualGroupEnergyMeter":
+            self.logger.debug(f"Device {newDev.name} has change")
             if origDev.configured != newDev.configured:
-                self.logger.debug(u"Device %s is configured" % (newDev.name))
+                self.logger.debug(f"Device {newDev.name} is configured")
                 self.deviceStartComm(newDev)
             elif origDev.enabled != newDev.enabled:
                 if newDev.enabled:
-                    self.logger.debug(u"Device %s is is enabled" % (newDev.name))
+                    self.logger.debug(f"Device {newDev.name} is is enabled")
                     self.deviceStartComm(origDev)
                 else:
-                    self.logger.debug(u"Device %s is is disabled" % (newDev.name))
+                    self.logger.debug(f"Device {newDev.name} is is disabled")
                     self.deviceStopComm(origDev)
-            elif newDev.deviceTypeId == u"virtualDeviceEnergyMeter"\
+            elif newDev.deviceTypeId == "virtualDeviceEnergyMeter"\
                     and 'parentDeviceId' in origDev.ownerProps\
                     and origDev.ownerProps['parentDeviceId'] != newDev.ownerProps['parentDeviceId']\
-                    and int(origDev.ownerProps[u"parentDeviceId"]) in indigo.devices:
-                parentDevice = indigo.devices[int(origDev.ownerProps[u"parentDeviceId"])]
-                self.logger.debug(u"Device %s has changed parent device to %s" % (newDev.name, parentDevice.name))
-                if origDev.ownerProps[u"parentDeviceId"] in self.parentDevIdsWeUseDict:
-                    self.parentDevIdsWeUseDict.remove(int(origDev.ownerProps[u"parentDeviceId"]))
-                self.parentDevIdsWeUseDict.append(int(newDev.ownerProps[u"parentDeviceId"]))
+                    and int(origDev.ownerProps["parentDeviceId"]) in indigo.devices:
+                parentDevice = indigo.devices[int(origDev.ownerProps["parentDeviceId"])]
+                self.logger.debug(f"Device {newDev.name} has changed parent device to {parentDevice.name}")
+                if origDev.ownerProps["parentDeviceId"] in self.parentDevIdsWeUseDict:
+                    self.parentDevIdsWeUseDict.remove(int(origDev.ownerProps["parentDeviceId"]))
+                self.parentDevIdsWeUseDict.append(int(newDev.ownerProps["parentDeviceId"]))
                 if parentDevice.states['onOffState']:
-                    self.logger.debug(u"Parent device %s is turned on" % (parentDevice.name))
-                    if u"brightnessLevel" in parentDevice.states:
-                        self.logger.debug(u"Parent device %s is a dimmer" % (parentDevice.name))
+                    self.logger.debug(f"Parent device {parentDevice.name} is turned on")
+                    if "brightnessLevel" in parentDevice.states:
+                        self.logger.debug(f"Parent device {parentDevice.name} is a dimmer")
                         watts = self.getCurPower(origDev, int(parentDevice.states.get("brightnessLevel")))
                     else:
-                        self.logger.debug(u"Parent device %s is not a dimmer" % (parentDevice.name))
-                        watts = float(origDev.ownerProps[u"powerAtOn"])
+                        self.logger.debug(f"Parent device {parentDevice.name} is not a dimmer")
+                        watts = float(origDev.ownerProps["powerAtOn"])
                     accumEnergyTotalTS = origDev.states.get("accumEnergyTotalTS", ts)
                     energy = ((ts - accumEnergyTotalTS) / 3600 * watts) / 1000
                 else:
@@ -281,46 +278,46 @@ class Plugin(indigo.PluginBase):
                 self._addAccumEnergy(newDev, energy, ts)
                 self._refreshState(newDev)
 
-            elif newDev.deviceTypeId == u"virtualGroupEnergyMeter" \
+            elif newDev.deviceTypeId == "virtualGroupEnergyMeter" \
                     and origDev.ownerProps['childEnergyMeters'] != newDev.ownerProps['childEnergyMeters']:
                 self._refreshState(newDev)
 
         if newDev.id not in self.parentDevIdsWeUseDict:
             return
         else:
-                self.logger.debug(u"Device %s has change" % (newDev.name))
-        if (u"onOffState" in origDev.states and origDev.states['onOffState'] != newDev.states['onOffState'])\
-                or (u"brightnessLevel" in origDev.states
+                self.logger.debug(f"Device {newDev.name} has change")
+        if ("onOffState" in origDev.states and origDev.states['onOffState'] != newDev.states['onOffState'])\
+                or ("brightnessLevel" in origDev.states
                     and origDev.states['brightnessLevel'] != newDev.states['brightnessLevel']):
-            self.logger.debug(U"The parent device, %s, has changed onOff state or brightness level" % origDev.name)
+            self.logger.debug(f"The parent device, {origDev.name}, has changed onOff state or brightness level")
             #TODO: Fix error handling if dev don't exists
-            self.logger.debug(U"Getting all Virtual Energy Meters with parent device: %s" % origDev.name)
-            devs = filter(lambda x: x.deviceTypeId == u"virtualDeviceEnergyMeter" and x.ownerProps[u"parentDeviceId"] == str(origDev.id), indigo.devices.iter("self"))
-            self.logger.debug(U"Found %d Virtual Energy Meters with parent device: %s" % (len(devs), origDev.name))
+            self.logger.debug(f"Getting all Virtual Energy Meters with parent device: {origDev.name}")
+            devs = list(filter(lambda x: x.deviceTypeId == "virtualDeviceEnergyMeter" and x.ownerProps["parentDeviceId"] == str(origDev.id), indigo.devices.iter("self")))
+            self.logger.debug(f"Found {len(devs)} Virtual Energy Meters with parent device: {origDev.name}")
             for dev in devs:
-                self.logger.debug(U"Syncing Virtual Energy Meter %s with %s" % (dev.name, origDev.name))
+                self.logger.debug(f"Syncing Virtual Energy Meter {dev.name} with {origDev.name}")
                 if origDev.states['onOffState']:
-                    if u"brightnessLevel" in origDev.states:
+                    if "brightnessLevel" in origDev.states:
                         watts = self.getCurPower(dev, int(origDev.states.get("brightnessLevel")))
                     else:
-                        watts = float(dev.ownerProps[u"powerAtOn"])
+                        watts = float(dev.ownerProps["powerAtOn"])
                     accumEnergyTotalTS = dev.states.get("accumEnergyTotalTS", ts)
                     energy = ((ts - accumEnergyTotalTS) / 3600 * watts) / 1000
                 else:
                     energy = 0
                 self._addAccumEnergy(dev, energy, ts)
                 self._refreshState(dev)
-        if (u"curEnergyLevel" in origDev.states and origDev.states['curEnergyLevel'] != newDev.states['curEnergyLevel']):
-            # or (u"accumEnergyTotal" in origDev.states and origDev.states['accumEnergyTotal'] != newDev.states['accumEnergyTotal']) \
-            self.logger.debug(U"Device, %s has changed curEnergyLevel" % origDev.name)
-            devs = filter(lambda x: x.deviceTypeId == u"virtualGroupEnergyMeter" and str(origDev.id) in x.ownerProps[u"childEnergyMeters"], indigo.devices.iter("self"))
-            self.logger.debug(U"Found %d Virtual Group Energy Meters with child device: %s" % (len(devs), origDev.name))
+        if ("curEnergyLevel" in origDev.states and origDev.states['curEnergyLevel'] != newDev.states['curEnergyLevel']):
+            # or ("accumEnergyTotal" in origDev.states and origDev.states['accumEnergyTotal'] != newDev.states['accumEnergyTotal']) \
+            self.logger.debug(f"Device, {origDev.name} has changed curEnergyLevel")
+            devs = list(filter(lambda x: x.deviceTypeId == "virtualGroupEnergyMeter" and str(origDev.id) in x.ownerProps["childEnergyMeters"], indigo.devices.iter("self")))
+            self.logger.debug(f"Found {len(devs)} Virtual Group Energy Meters with child device: {origDev.name}")
             for dev in devs:
-                self.logger.debug(u"Device %s has change, update Group Energy Meter %s" % (origDev.name, dev.name))
+                self.logger.debug(f"Device {origDev.name} has change, update Group Energy Meter {dev.name}")
                 ts = time.time()
                 accumEnergyTotalTS = dev.states.get("accumEnergyTotalTS", ts)
                 power = 0.0
-                for devId in dev.ownerProps[u"childEnergyMeters"]:
+                for devId in dev.ownerProps["childEnergyMeters"]:
                     if devId == str(origDev.id):
                         watt = origDev.states.get('curEnergyLevel', 0)
                         power = ((ts - accumEnergyTotalTS) / 3600 * watt) / 1000
@@ -334,10 +331,10 @@ class Plugin(indigo.PluginBase):
 
     def getCurPower(self, dev, dimLevel):
         xp = [1, 33, 66, 100]
-        fp = [float(dev.ownerProps[u"powerAt1"]),
-              float(dev.ownerProps[u"powerAt33"]),
-              float(dev.ownerProps[u"powerAt66"]),
-              float(dev.ownerProps[u"powerAt100"])]
+        fp = [float(dev.ownerProps["powerAt1"]),
+              float(dev.ownerProps["powerAt33"]),
+              float(dev.ownerProps["powerAt66"]),
+              float(dev.ownerProps["powerAt100"])]
         return np.interp(dimLevel, xp, fp)
 
     ########################################
@@ -348,7 +345,7 @@ class Plugin(indigo.PluginBase):
         if action.deviceAction == indigo.kDeviceGeneralAction.Beep:
             # Beep the hardware module (dev) here:
             # ** IMPLEMENT ME **
-            indigo.server.log(u"sent \"%s\" %s" % (dev.name, "beep request"))
+            indigo.server.log(f"sent \"{dev.name}\" {'beep request'}")
 
         ###### ENERGY UPDATE ######
         elif action.deviceAction == indigo.kDeviceGeneralAction.EnergyUpdate:
@@ -360,7 +357,7 @@ class Plugin(indigo.PluginBase):
         elif action.deviceAction == indigo.kDeviceGeneralAction.EnergyReset:
             # Request that the hardware module (dev) reset its accumulative energy usage data here:
             # ** IMPLEMENT ME **
-            indigo.server.log(u"sent \"%s\" %s" % (dev.name, "energy usage reset"))
+            indigo.server.log(f"sent \"{dev.name}\" {'energy usage reset'}")
             # And then tell Indigo to reset it by just setting the value to 0.
             # This will automatically reset Indigo's time stamp for the accumulation.
             dev.updateStateOnServer("accumEnergyTotal", 0.0)
@@ -376,11 +373,11 @@ class Plugin(indigo.PluginBase):
     ######################
     def setBacklightBrightness(self, pluginAction, dev):
         try:
-            newBrightness = int(pluginAction.props.get(u"brightness", 100))
+            newBrightness = int(pluginAction.props.get("brightness", 100))
         except ValueError:
             # The int() cast above might fail if the user didn't enter a number:
             indigo.server.log(
-                u"set backlight brightness action to device \"%s\" -- invalid brightness value" % (dev.name,),
+                f"set backlight brightness action to device \"{dev.name}\" -- invalid brightness value",
                 isError=True)
             return
 
@@ -390,13 +387,13 @@ class Plugin(indigo.PluginBase):
 
         if sendSuccess:
             # If success then log that the command was successfully sent.
-            indigo.server.log(u"sent \"%s\" %s to %d" % (dev.name, "set backlight brightness", newBrightness))
+            indigo.server.log(f"sent \"{dev.name}\" {'set backlight brightness'} to {newBrightness}")
 
             # And then tell the Indigo Server to update the state:
             dev.updateStateOnServer("backlightBrightness", newBrightness)
         else:
             # Else log failure but do NOT update state on Indigo Server.
-            indigo.server.log(u"send \"%s\" %s to %d failed" % (dev.name, "set backlight brightness", newBrightness),
+            indigo.server.log(f"send \"{dev.name}\" {'set backlight brightness'} to {newBrightness} failed",
                               isError=True)
 
     ########################################
@@ -406,21 +403,21 @@ class Plugin(indigo.PluginBase):
         ###### TURN ON ######
         # Ignore turn on/off/toggle requests from clients since this is a read-only sensor.
         if action.sensorAction == indigo.kSensorAction.TurnOn:
-            indigo.server.log(u"ignored \"%s\" %s request (sensor is read-only)" % (dev.name, "on"))
+            indigo.server.log(f"ignored \"{dev.name}\" {'on'} request (sensor is read-only)")
         # But we could request a sensor state update if we wanted like this:
         # dev.updateStateOnServer("onOffState", True)
 
         ###### TURN OFF ######
         # Ignore turn on/off/toggle requests from clients since this is a read-only sensor.
         elif action.sensorAction == indigo.kSensorAction.TurnOff:
-            indigo.server.log(u"ignored \"%s\" %s request (sensor is read-only)" % (dev.name, "off"))
+            indigo.server.log(f"ignored \"{dev.name}\" {'off'} request (sensor is read-only)")
         # But we could request a sensor state update if we wanted like this:
         # dev.updateStateOnServer("onOffState", False)
 
         ###### TOGGLE ######
         # Ignore turn on/off/toggle requests from clients since this is a read-only sensor.
         elif action.sensorAction == indigo.kSensorAction.Toggle:
-            indigo.server.log(u"ignored \"%s\" %s request (sensor is read-only)" % (dev.name, "toggle"))
+            indigo.server.log(f"ignored \"{dev.name}\" {'toggle'} request (sensor is read-only)")
             # But we could request a sensor state update if we wanted like this:
             # dev.updateStateOnServer("onOffState", not dev.onState)
 
@@ -436,13 +433,13 @@ class Plugin(indigo.PluginBase):
 
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s" % (dev.name, "on"))
+                indigo.server.log(f"sent \"{dev.name}\" {'on'}")
 
                 # And then tell the Indigo Server to update the state.
                 dev.updateStateOnServer("onOffState", True)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s failed" % (dev.name, "on"), isError=True)
+                indigo.server.log(f"send \"{dev.name}\" {'on'} failed", isError=True)
 
         ###### TURN OFF ######
         elif action.deviceAction == indigo.kDimmerRelayAction.TurnOff:
@@ -452,13 +449,13 @@ class Plugin(indigo.PluginBase):
 
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s" % (dev.name, "off"))
+                indigo.server.log(f"sent \"{dev.name}\" {'off'}")
 
                 # And then tell the Indigo Server to update the state:
                 dev.updateStateOnServer("onOffState", False)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s failed" % (dev.name, "off"), isError=True)
+                indigo.server.log(f"send \"{dev.name}\" {'off'} failed", isError=True)
 
         ###### TOGGLE ######
         elif action.deviceAction == indigo.kDimmerRelayAction.Toggle:
@@ -469,13 +466,13 @@ class Plugin(indigo.PluginBase):
 
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s" % (dev.name, "toggle"))
+                indigo.server.log(f"sent \"{dev.name}\" {'toggle'}")
 
                 # And then tell the Indigo Server to update the state:
                 dev.updateStateOnServer("onOffState", newOnState)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s failed" % (dev.name, "toggle"), isError=True)
+                indigo.server.log(f"send \"{dev.name}\" {'toggle'} failed", isError=True)
 
         ###### SET BRIGHTNESS ######
         elif action.deviceAction == indigo.kDimmerRelayAction.SetBrightness:
@@ -486,13 +483,13 @@ class Plugin(indigo.PluginBase):
 
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s to %d" % (dev.name, "set brightness", newBrightness))
+                indigo.server.log(f"sent \"{dev.name}\" {'set brightness'} to {newBrightness}")
 
                 # And then tell the Indigo Server to update the state:
                 dev.updateStateOnServer("brightnessLevel", newBrightness)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s to %d failed" % (dev.name, "set brightness", newBrightness),
+                indigo.server.log(f"send \"{dev.name}\" {'set brightness'} to {newBrightness} failed",
                                   isError=True)
 
         ###### BRIGHTEN BY ######
@@ -506,13 +503,13 @@ class Plugin(indigo.PluginBase):
 
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s to %d" % (dev.name, "brighten", newBrightness))
+                indigo.server.log(f"sent \"{dev.name}\" {'brighten'} to {newBrightness}")
 
                 # And then tell the Indigo Server to update the state:
                 dev.updateStateOnServer("brightnessLevel", newBrightness)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s to %d failed" % (dev.name, "brighten", newBrightness), isError=True)
+                indigo.server.log(f"send \"{dev.name}\" {'brighten'} to {newBrightness} failed", isError=True)
 
         ###### DIM BY ######
         elif action.deviceAction == indigo.kDimmerRelayAction.DimBy:
@@ -525,13 +522,13 @@ class Plugin(indigo.PluginBase):
 
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s to %d" % (dev.name, "dim", newBrightness))
+                indigo.server.log(f"sent \"{dev.name}\" {'dim'} to {newBrightness}")
 
                 # And then tell the Indigo Server to update the state:
                 dev.updateStateOnServer("brightnessLevel", newBrightness)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s to %d failed" % (dev.name, "dim", newBrightness), isError=True)
+                indigo.server.log(f"send \"{dev.name}\" {'dim'} to {newBrightness} failed", isError=True)
 
         ###### SET COLOR LEVELS ######
         elif action.deviceAction == indigo.kDimmerRelayAction.SetColorLevels:
@@ -602,14 +599,14 @@ class Plugin(indigo.PluginBase):
             resultValsStr = ' '.join(resultVals)
             if sendSuccess:
                 # If success then log that the command was successfully sent.
-                indigo.server.log(u"sent \"%s\" %s to %s" % (dev.name, "set color", resultValsStr))
+                indigo.server.log(f"sent \"{dev.name}\" {'set color'} to {resultValsStr}")
 
                 # And then tell the Indigo Server to update the color level states:
                 if len(keyValueList) > 0:
                     dev.updateStatesOnServer(keyValueList)
             else:
                 # Else log failure but do NOT update state on Indigo Server.
-                indigo.server.log(u"send \"%s\" %s to %s failed" % (dev.name, "set color", resultValsStr), isError=True)
+                indigo.server.log(f"send \"{dev.name}\" {'set color'} to {resultValsStr} failed", isError=True)
 
     ########################################
     # Plugin Config callback
@@ -620,7 +617,7 @@ class Plugin(indigo.PluginBase):
 
     def loggingLevelList(self, filter="", valuesDict=None, typeId="", targetId=0):
         logLevels = [
-            [logging.DEBUG, "Debug"],
+            (logging.DEBUG, "Debug"),
             (logging.INFO, "Normal"),
             (logging.WARN, "Warning"),
             (logging.ERROR, "Error"),
@@ -634,5 +631,4 @@ class Plugin(indigo.PluginBase):
             logLevel = int(logLevel)
         self.logger.setLevel(logLevel)
         self.debug = (self.logger.level <= logging.DEBUG)
-        indigo.server.log(
-            u"Setting logging level to %s" % (self.loggingLevelList()[int(self.pluginPrefs["loggingLevel"]) / 10 - 1][1]))
+        indigo.server.log(f"Setting logging level to {self.loggingLevelList()[int(int(self.pluginPrefs['loggingLevel']) / 10 - 1)][1]}")
