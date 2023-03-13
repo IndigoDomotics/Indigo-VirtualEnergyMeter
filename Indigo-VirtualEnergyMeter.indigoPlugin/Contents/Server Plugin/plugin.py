@@ -181,13 +181,11 @@ class Plugin(indigo.PluginBase):
 
     def validatePrefsConfigUi(self, valuesDict):
         errorDict = indigo.Dict()
-        if valuesDict["deviceUpdate"] <= 0:
-            errorDict["deviceUpdate"] = "The value of this field must be an integer"
-            valuesDict["deviceUpdate"] = 300
-        if errorDict:
-            return (False, valuesDict, errorDict)
-        else:
-            return (True, valuesDict)
+        try:
+            poll_time = int(valuesDict["deviceUpdate"])
+        except:
+            poll_time = 300
+        return (True, valuesDict)
 
     ########################################
     # Methods for changes in Device states
@@ -615,7 +613,7 @@ class Plugin(indigo.PluginBase):
         logLevels = [
             (logging.DEBUG, "Debug"),
             (logging.INFO, "Normal"),
-            (logging.WARN, "Warning"),
+            (logging.WARNING, "Warning"),
             (logging.ERROR, "Error"),
             (logging.CRITICAL, "Critical")
         ]
@@ -625,6 +623,7 @@ class Plugin(indigo.PluginBase):
         logLevel = self.pluginPrefs.get("loggingLevel", logging.INFO)
         if type(logLevel) is not int:
             logLevel = int(logLevel)
+        self.logger.setLevel(logging.INFO)
+        self.logger.info(f"Setting log level to {logging.getLevelName(logLevel)}")
         self.logger.setLevel(logLevel)
-        self.debug = (self.logger.level <= logging.DEBUG)
-        indigo.server.log(f"Setting logging level to {self.loggingLevelList()[int(int(self.pluginPrefs['loggingLevel']) / 10 - 1)][1]}")
+
