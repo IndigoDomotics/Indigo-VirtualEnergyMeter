@@ -1,6 +1,6 @@
 # Virtual Energy Meter an Indigo Plugin
-With this Indigo 7 plugin you can create virtual energy meters based on other devices.
-The plugin will have two major features Virtual Device Energy Meter och Virtual Group Energy Meter
+With this Indigo plugin you can create virtual energy meters based on other devices.
+The plugin will have two major features Virtual Device Energy Meter and Virtual Group Energy Meter
  
 ## Virtual Device Energy Meter 
 If you have devices that have a static energy consumption when its on you can then create an child device that act as an energy meter for that device.

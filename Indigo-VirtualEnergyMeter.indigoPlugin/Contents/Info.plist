@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>PluginVersion</key>
-	<string>0.4.0</string>
+	<string>2023.1.0</string>
 	<key>ServerApiVersion</key>
 	<string>3.0</string>
 	<key>IwsApiVersion</key>
@@ -18,15 +18,8 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>https://github.com/lindehoff/Indigo-VirtualEnergyMeter</string>
+			<string>https://github.com/IndigoDomotics/Indigo-VirtualEnergyMeter</string>
 		</dict>
 	</array>
-	<key>GithubInfo</key>
-	<dict>
-		<key>GithubRepo</key>
-		<string>Indigo-VirtualEnergyMeter</string>
-		<key>GithubUser</key>
-		<string>lindehoff</string>
-	</dict>
 </dict>
 </plist>

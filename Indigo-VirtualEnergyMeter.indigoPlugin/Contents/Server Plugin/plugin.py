@@ -1,16 +1,12 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-####################
+import logging
+import numpy as np
+import time
 
 try:
     # noinspection PyUnresolvedReferences
     import indigo
 except ImportError:
     pass
-
-import logging
-import numpy as np
-import time
 
 class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
